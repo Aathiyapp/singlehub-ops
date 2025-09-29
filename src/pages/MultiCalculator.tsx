@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,18 +19,18 @@ export default function MultiCalculator() {
   const [percentageResult, setPercentageResult] = useState("");
 
   // German DRG Calculator
-  const [maxLos2, setMaxLos2] = useState("");
-  const [bundesland, setBundesland] = useState("");
-  const [col10, setCol10] = useState("");
-  const [actualLos2, setActualLos2] = useState("");
+  const [maxLos2, setMaxLos2] = useState("6");
+  const [bundesland, setBundesland] = useState("4206.51");
+  const [col10, setCol10] = useState("0.051");
+  const [actualLos2, setActualLos2] = useState("9");
   const [bundeslandResult, setBundeslandResult] = useState("");
 
   // Swiss DRG Calculator
-  const [cw, setCw] = useState("");
-  const [maxLos, setMaxLos] = useState("");
-  const [drgRate, setDrgRate] = useState("");
-  const [col9, setCol9] = useState("");
-  const [actualLos, setActualLos] = useState("");
+  const [cw, setCw] = useState("0.977");
+  const [maxLos, setMaxLos] = useState("6");
+  const [drgRate, setDrgRate] = useState("13500");
+  const [col9, setCol9] = useState("0.153");
+  const [actualLos, setActualLos] = useState("9");
   const [drgResult, setDrgResult] = useState("");
 
   const calculateDateDifference = () => {
@@ -42,7 +42,7 @@ export default function MultiCalculator() {
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       setDateDiffResult(`Difference: ${diffDays} days`);
     } else {
-      setDateDiffResult('Please enter valid dates');
+      setDateDiffResult('');
     }
   };
 
@@ -54,7 +54,7 @@ export default function MultiCalculator() {
       const result = (base * percentage) / 100;
       setPercentageResult(`${percentage}% of ${base} = ${result.toFixed(2)}`);
     } else {
-      setPercentageResult('Please enter valid numbers');
+      setPercentageResult('');
     }
   };
 
@@ -64,8 +64,8 @@ export default function MultiCalculator() {
     const factor = parseFloat(col10);
     const actual = parseInt(actualLos2);
 
-    if ([max, rate, factor, actual].some(isNaN)) {
-      setBundeslandResult('Please enter valid numbers');
+    if ([max, rate, factor, actual].some(isNaN) || !maxLos2 || !bundesland || !col10 || !actualLos2) {
+      setBundeslandResult('');
       return;
     }
     
@@ -74,7 +74,7 @@ export default function MultiCalculator() {
       setBundeslandResult("LOS within limit.");
     } else {
       const res = rate * factor * ext;
-      setBundeslandResult(`Extended: ${ext} days → ${res.toFixed(2)} EUR`);
+      setBundeslandResult(`Extended: ${ext} days → <strong>${res.toFixed(2)}</strong>`);
     }
   };
 
@@ -85,8 +85,8 @@ export default function MultiCalculator() {
     const f = parseFloat(col9);
     const a = parseInt(actualLos);
 
-    if ([c, m, r, f, a].some(isNaN)) {
-      setDrgResult('Please enter valid numbers');
+    if ([c, m, r, f, a].some(isNaN) || !cw || !maxLos || !drgRate || !col9 || !actualLos) {
+      setDrgResult('');
       return;
     }
 
@@ -94,14 +94,31 @@ export default function MultiCalculator() {
     const ext = a - m;
 
     if (ext <= 0) {
-      setDrgResult(`LOS within limit. Payment: ${basePayment.toFixed(2)} CHF`);
+      setDrgResult(`LOS within limit. Payment: <strong>${basePayment.toFixed(2)}</strong>`);
     } else {
       const comp = (ext + 1) * f;
       const finalCW = c + comp;
       const payment = finalCW * r;
-      setDrgResult(`Excess days: ${ext}. Final CW: ${finalCW.toFixed(4)} → ${payment.toFixed(2)} CHF`);
+      setDrgResult(`Excess days: ${ext}. Final CW: ${finalCW.toFixed(4)} → <strong>${payment.toFixed(2)}</strong>`);
     }
   };
+
+  // Auto-calculate when inputs change
+  useEffect(() => {
+    calculateDateDifference();
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    calculatePercentage();
+  }, [baseValue, percentageValue]);
+
+  useEffect(() => {
+    updateGermanDRG();
+  }, [maxLos2, bundesland, col10, actualLos2]);
+
+  useEffect(() => {
+    updateSwissDRG();
+  }, [cw, maxLos, drgRate, col9, actualLos]);
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -166,10 +183,6 @@ export default function MultiCalculator() {
                   />
                 </div>
               </div>
-              <Button onClick={calculateDateDifference} className="w-full bg-gradient-primary text-white hover:opacity-90">
-                <Calculator className="h-4 w-4 mr-2" />
-                Calculate Difference
-              </Button>
               {dateDiffResult && (
                 <div className="p-4 bg-primary-light rounded-lg border border-primary/20">
                   <p className="font-medium text-foreground">{dateDiffResult}</p>
@@ -214,10 +227,6 @@ export default function MultiCalculator() {
                   />
                 </div>
               </div>
-              <Button onClick={calculatePercentage} className="w-full bg-gradient-primary text-white hover:opacity-90">
-                <Calculator className="h-4 w-4 mr-2" />
-                Calculate Percentage
-              </Button>
               {percentageResult && (
                 <div className="p-4 bg-primary-light rounded-lg border border-primary/20">
                   <p className="font-medium text-foreground">{percentageResult}</p>
@@ -284,10 +293,6 @@ export default function MultiCalculator() {
                   />
                 </div>
               </div>
-              <Button onClick={updateGermanDRG} className="w-full bg-gradient-primary text-white hover:opacity-90">
-                <Calculator className="h-4 w-4 mr-2" />
-                Calculate German DRG
-              </Button>
               {bundeslandResult && (
                 <div className="p-4 bg-primary-light rounded-lg border border-primary/20">
                   <p className="font-medium text-foreground" dangerouslySetInnerHTML={{ __html: bundeslandResult }} />
@@ -365,10 +370,6 @@ export default function MultiCalculator() {
                   />
                 </div>
               </div>
-              <Button onClick={updateSwissDRG} className="w-full bg-gradient-primary text-white hover:opacity-90">
-                <Calculator className="h-4 w-4 mr-2" />
-                Calculate Swiss DRG
-              </Button>
               {drgResult && (
                 <div className="p-4 bg-primary-light rounded-lg border border-primary/20">
                   <p className="font-medium text-foreground" dangerouslySetInnerHTML={{ __html: drgResult }} />

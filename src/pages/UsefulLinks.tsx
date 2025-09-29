@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExternalLink, Search, Star, BookOpen, Globe, FileText, Calculator, Heart } from "lucide-react";
 
 export default function UsefulLinks() {
+  const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   const linkCategories = [
